@@ -21,7 +21,7 @@ def candles(ctx):
 @click.option('--end', default='2023-01-02 00:00:00', help='2023-01-02 00:00:00')
 @click.pass_context
 def history(ctx, symbol, interval, start, end):
-    workdir = ctx.obj['work_dir']
+    workdir = ctx.obj['workdir']
     """获取历史数据"""
     start = pd.to_datetime(start)
     end = pd.to_datetime(end)
