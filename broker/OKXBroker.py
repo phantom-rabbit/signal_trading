@@ -1,3 +1,5 @@
+import time
+
 from loguru import logger
 import backtrader as bt
 from backtrader.utils.py3 import queue, with_metaclass
@@ -46,8 +48,11 @@ class OKXBroker(with_metaclass(MetaCCXTBroker, bt.BackBroker)):
 
     def __init__(self):
         super(OKXBroker, self).__init__()
+        logger.info(f"connect to OKEX {'test-net' if self.p.is_testnet else 'main-net'}")
+        logger.info(f"set trade cash:{self.p.cash}")
+        time.sleep(1)
         self.store = CCXTStore(api_key=self.p.api_key, secret=self.p.secret, password=self.p.password,
-                               is_testnet=self.p.is_testnet, debug=self.p.debug, )
+                               is_testnet=self.p.is_testnet, cash=self.p.cash, debug=self.p.debug)
 
         self.cash = self.p.cash
         self.position = Positions()
