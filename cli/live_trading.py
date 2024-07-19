@@ -48,8 +48,8 @@ def sma(ctx, symbol, cash, interval, period, below, above, debug=True):
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    DATABASE_URL = f'sqlite://{ctx.obj["database"]}/database/trade_records.db'
-    engine = create_engine(DATABASE_URL)
+    db_path = ctx.obj['database']['path']
+    engine = create_engine(f'sqlite:///{db_path}')
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
     Base.metadata.create_all(bind=engine)
@@ -103,9 +103,8 @@ def ema(ctx, symbol, cash, interval, period, below, above, debug=True):
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    DATABASE_URL = f'sqlite://{ctx.obj["database"]}/database/trade_records.db'
-    print(DATABASE_URL)
-    engine = create_engine(DATABASE_URL)
+    db_path = ctx.obj['database']['path']
+    engine = create_engine(f'sqlite:///{db_path}')
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
     Base.metadata.create_all(bind=engine)
@@ -158,8 +157,8 @@ def ema_crossover(ctx, symbol, cash, interval, short_period, long_period, debug=
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    DATABASE_URL = f'sqlite://{ctx.obj["database"]}/database/trade_records.db'
-    engine = create_engine(DATABASE_URL)
+    db_path = ctx.obj['database']['path']
+    engine = create_engine(f'sqlite:///{db_path}')
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
     Base.metadata.create_all(bind=engine)
