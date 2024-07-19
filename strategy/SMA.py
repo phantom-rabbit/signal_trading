@@ -13,7 +13,7 @@ class SMA(bt.Strategy):
         self.sma = bt.indicators.SimpleMovingAverage(self.datas[0], period=self.params.period)
         self._open_order = 0
         self.op = bt.Order.Buy
-        logger.info(f"Init SMA strategy params: {self.params.period}")
+        logger.info(f"Init SMA strategy params: {self.params.__dict__}")
 
     def next(self):
         # 获取最近N个Bar的数据
@@ -37,8 +37,7 @@ class SMA(bt.Strategy):
         sell_price = self.sma[0]* (1 + self.params.above)
         if self.datas[0].close[0] < buy_price:
             if self.op == bt.Order.Buy:
-                number = cash / self.datas[0].close[0]
-                size = int(number*10000)/10000 # 保留小数点后4位
+                size = cash / self.datas[0].close[0]
                 order = self.buy(price=self.datas[0].close[0], size=size, exectype=bt.Order.Limit)
                 self._open_order += 1
                 if self.p.debug:
@@ -46,7 +45,7 @@ class SMA(bt.Strategy):
 
         elif self.datas[0].close[0] > sell_price:
             if self.op == bt.Order.Sell:
-                size = int(position*10000)/10000  # 保留小数点后4位
+                size = position  # 保留小数点后4位
                 order = self.sell(price=self.datas[0].close[0], size=size, exectype=bt.Order.Limit)
                 self._open_order += 1
                 if self.p.debug:

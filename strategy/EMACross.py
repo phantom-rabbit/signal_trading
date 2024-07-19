@@ -14,7 +14,7 @@ class EMA_Crossover(bt.Strategy):
         self.crossover = bt.indicators.CrossOver(self.ema_short, self.ema_long)
         self._open_order = 0
         self.op = bt.Order.Buy
-        logger.info(f"Init EMA Crossover strategy params: short_period={self.params.short_period}, long_period={self.params.long_period}")
+        logger.info(f"Init EMA Crossover strategy params: {self.params.__dict__}")
 
     def next(self):
         if len(self.datas[0]) < self.params.long_period:
@@ -33,8 +33,7 @@ class EMA_Crossover(bt.Strategy):
 
         if self.crossover > 0:  # 黄金交叉，买入
             if self.op == bt.Order.Buy:
-                number = cash / self.datas[0].close[0]
-                size = int(number * 10000) / 10000  # 保留小数点后4位
+                size = cash / self.datas[0].close[0]
                 order = self.buy(price=self.datas[0].close[0], size=size, exectype=bt.Order.Limit)
                 self._open_order += 1
                 if self.p.debug:
@@ -42,7 +41,7 @@ class EMA_Crossover(bt.Strategy):
 
         elif self.crossover < 0:  # 死亡交叉，卖出
             if self.op == bt.Order.Sell:
-                size = int(position * 10000) / 10000  # 保留小数点后4位
+                size = position
                 order = self.sell(price=self.datas[0].close[0], size=size, exectype=bt.Order.Limit)
                 self._open_order += 1
                 if self.p.debug:

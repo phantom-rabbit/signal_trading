@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_DOWN
+
 import ccxt
 from backtrader.metabase import MetaParams
 from backtrader.utils.py3 import with_metaclass
@@ -62,9 +64,13 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
         if self._cash > cash_free:
             raise ValueError("可用资金小于初始资金")
 
+        self.markets = self.exchange.load_markets()
+
+
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(30))
     def execute_order(self, symbol, side, size, price=None, order_type='limit'):
         try:
+            size = self.handler_precision(symbol, size)
             price = self.adjust_price(symbol, side, price)
             if self.p.debug:
                 logger.debug(
@@ -106,6 +112,28 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
         if self.p.debug:
             logger.debug(f"Fetch_order result: {order_info}")
         return order_info
+
+    def handler_precision(self, symbol, value):
+        amount_precision = int(abs(Decimal(str(self.markets[symbol]['precision']['amount'])).as_tuple().exponent))
+        value = truncate_to_decimal_places(value, amount_precision)
+        return value
+
+
+def truncate_to_decimal_places(number, decimal_places):
+    # 确保 decimal_places 是整数
+    decimal_places = int(decimal_places)
+
+    # 将数字转换为 Decimal 类型
+    decimal_number = Decimal(str(number))
+
+    # 构建截断的格式字符串，例如：'1.00000000' 表示保留 8 位小数
+    format_string = '1.' + '0' * decimal_places
+
+    # 使用 quantize 进行截断，不进行四舍五入
+    truncated_number = decimal_number.quantize(Decimal(format_string), rounding=ROUND_DOWN)
+
+    # 去除多余的零
+    return truncated_number.normalize()
 
 
 if __name__ == '__main__':
