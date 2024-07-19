@@ -1,5 +1,6 @@
 import datetime
 import os.path
+import sys
 
 import backtrader as bt
 import click
@@ -17,10 +18,6 @@ import signal
 @click.pass_context
 def live_trading(ctx):
     """实盘交易"""
-    workdir = ctx.obj['workdir']
-    directory = os.path.join(workdir, "database")
-    os.makedirs(directory, exist_ok=True)
-    ctx.obj['database'] = directory
 
 
 @live_trading.command()
@@ -48,7 +45,7 @@ def sma(ctx, symbol, cash, interval, period, below, above, debug=True):
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    db_path = ctx.obj['database']['path']
+    db_path = ctx.obj['DATABASE']['path']
     engine = create_engine(f'sqlite:///{db_path}')
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
@@ -103,7 +100,7 @@ def ema(ctx, symbol, cash, interval, period, below, above, debug=True):
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    db_path = ctx.obj['database']['path']
+    db_path = ctx.obj['DATABASE']['path']
     engine = create_engine(f'sqlite:///{db_path}')
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
@@ -146,7 +143,6 @@ def ema_crossover(ctx, symbol, cash, interval, short_period, long_period, debug=
     策略 [ema指数交叉]
     黄金交叉买入，死亡交叉卖出
     """
-
     api_key = ctx.obj['API']['api_key']
     secret = ctx.obj['API']['secret']
     password = ctx.obj['API']['password']
@@ -157,7 +153,7 @@ def ema_crossover(ctx, symbol, cash, interval, short_period, long_period, debug=
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    db_path = ctx.obj['database']['path']
+    db_path = ctx.obj['DATABASE']['path']
     engine = create_engine(f'sqlite:///{db_path}')
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
