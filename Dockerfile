@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y wget ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 # 设置容器内的工作目录
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # 将 requirements.txt 文件复制到容器中
 COPY requirements.txt ./
