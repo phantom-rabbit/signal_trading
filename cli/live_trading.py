@@ -32,7 +32,7 @@ def live_trading(ctx):
 @click.option('--period', default=3, help="周期")
 @click.option('--below', default=0.05, help="低于周期的百分比买入 默认百分之5")
 @click.option('--above', default=0.05, help="高于周期的百分比卖出 默认百分之5")
-def sma(symbol, cash, interval, period, below, above, debug=True):
+def sma(ctx, symbol, cash, interval, period, below, above, debug=True):
     """
     策略 [简单移动均线指标]
         均线周期的平均价以下买入,在均线周期的平均价以上卖出
@@ -48,7 +48,7 @@ def sma(symbol, cash, interval, period, below, above, debug=True):
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    DATABASE_URL = 'sqlite:///data/trade_records.db'
+    DATABASE_URL = f'sqlite://{ctx.obj["database"]}/database/trade_records.db'
     engine = create_engine(DATABASE_URL)
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
@@ -103,7 +103,7 @@ def ema(ctx, symbol, cash, interval, period, below, above, debug=True):
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    DATABASE_URL = f'sqlite:////{ctx.obj["database"]}/database/trade_records.db'
+    DATABASE_URL = f'sqlite://{ctx.obj["database"]}/database/trade_records.db'
     print(DATABASE_URL)
     engine = create_engine(DATABASE_URL)
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -158,7 +158,7 @@ def ema_crossover(ctx, symbol, cash, interval, short_period, long_period, debug=
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    DATABASE_URL = 'sqlite:///data/trade_records.db'
+    DATABASE_URL = f'sqlite://{ctx.obj["database"]}/database/trade_records.db'
     engine = create_engine(DATABASE_URL)
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
