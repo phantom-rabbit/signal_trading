@@ -29,8 +29,6 @@ class OKXData(bt.DataBase):
         if self.p.is_testnet:
             self.exchange.set_sandbox_mode(True)
 
-        if self.p.debug:
-            logger.add("debug.log", level="DEBUG")
         self.interval = self.p.interval
 
         self.data_lock = Lock()  # 锁对象，用于线程安全

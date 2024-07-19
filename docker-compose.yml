@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  ema:
+    build: .
+    container_name: ema
+    environment:
+      - TZ=UTC
+    volumes:
+      - /home/admin/data:/data
+    command: bash /data/ema.sh
+
+  ssh2:
+    build: .
+    ports:
+      - "2223:22"
+    container_name: ema_cross
+    environment:
+      - TZ=UTC
+    volumes:
+      - /home/admin/data:/data
+    command: /usr/sbin/sshd

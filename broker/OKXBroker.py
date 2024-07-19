@@ -49,9 +49,6 @@ class OKXBroker(with_metaclass(MetaCCXTBroker, bt.BackBroker)):
         self.store = CCXTStore(api_key=self.p.api_key, secret=self.p.secret, password=self.p.password,
                                is_testnet=self.p.is_testnet, debug=self.p.debug, )
 
-        if self.p.debug:
-            logger.add("debug.log", level="DEBUG")
-
         self.cash = self.p.cash
         self.position = Positions()
 

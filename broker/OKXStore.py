@@ -53,9 +53,6 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
         if self.p.is_testnet:
             self.exchange.set_sandbox_mode(True)
 
-        if self.p.debug:
-            logger.add("debug.log", level="DEBUG")
-
         self._cash = self.p.cash
         balance = self.exchange.fetch_balance(params={
             "ccy": "USDT"
@@ -69,10 +66,12 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
     def execute_order(self, symbol, side, size, price=None, order_type='limit'):
         try:
             price = self.adjust_price(symbol, side, price)
-            logger.debug(
-                f"Executing order: symbol: {symbol}, type: {order_type}, side: {side}, size: {size}, price: {price}")
+            if self.p.debug:
+                logger.debug(
+                    f"Executing order: symbol: {symbol}, type: {order_type}, side: {side}, size: {size}, price: {price}")
             order = self.exchange.create_order(symbol, order_type, side, size, price)
-            logger.debug(f"Order result: {order}")
+            if self.p.debug:
+                logger.debug(f"Order result: {order}")
             return order
         except Exception as e:
             logger.error(e)
@@ -101,9 +100,11 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
 
     @retry(wait=wait_fixed(2))
     def fetch_order(self, oid, symbol):
-        logger.debug(f"Fetch_order: {oid}")
+        if self.p.debug:
+            logger.debug(f"Fetch_order: {oid}")
         order_info = self.exchange.fetch_order(oid, symbol)
-        logger.debug(f"Fetch_order result: {order_info}")
+        if self.p.debug:
+            logger.debug(f"Fetch_order result: {order_info}")
         return order_info
 
 
