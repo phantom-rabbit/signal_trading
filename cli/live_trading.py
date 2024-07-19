@@ -28,19 +28,21 @@ def live_trading(ctx):
 @click.option('--symbol', default='BTC/USDT', help='交易对')
 @click.option('--interval', default='1m', help='交易间隔，查看okx candles参数')
 @click.option('--cash', default=100, help='初始投入资金')
-@click.option('--api_key', default="", help='api_key')
-@click.option('--secret', default="", help='secret')
-@click.option('--password', default="", help='password')
-@click.option('--is_testnet', default=True, help='is_testnet True or False')
 @click.option('--debug', default=True)
 @click.option('--period', default=3, help="周期")
 @click.option('--below', default=0.05, help="低于周期的百分比买入 默认百分之5")
 @click.option('--above', default=0.05, help="高于周期的百分比卖出 默认百分之5")
-def sma(symbol, cash, interval, api_key, secret, password, is_testnet, period, below, above, debug=True):
+def sma(symbol, cash, interval, period, below, above, debug=True):
     """
     策略 [简单移动均线指标]
         均线周期的平均价以下买入,在均线周期的平均价以上卖出
     """
+
+    api_key = ctx.obj['API']['api_key']
+    secret = ctx.obj['API']['secret']
+    password = ctx.obj['API']['password']
+    is_testnet = ctx.obj['API']['is_testnet']
+
     data = OKXData(symbol=symbol, interval=interval, online_data=True, is_testnet=is_testnet, debug=debug)
     cerebro = bt.Cerebro()
     cerebro.adddata(data)
@@ -101,7 +103,8 @@ def ema(ctx, symbol, cash, interval, period, below, above, debug=True):
     cerebro.adddata(data)
     cerebro.broker.setcash(cash)
 
-    DATABASE_URL = f'sqlite:///{ctx.obj["database"]}/database/trade_records.db'
+    DATABASE_URL = f'sqlite:////{ctx.obj["database"]}/database/trade_records.db'
+    print(DATABASE_URL)
     engine = create_engine(DATABASE_URL)
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = Session()
@@ -132,21 +135,24 @@ def ema(ctx, symbol, cash, interval, period, below, above, debug=True):
     # result_handler(run, f"{datetime.datetime.now()}_SMA")
 
 @live_trading.command()
+@click.pass_context
 @click.option('--symbol', default='BTC/USDT', help='交易对')
 @click.option('--interval', default='1m', help='交易间隔，查看okx candles参数')
 @click.option('--cash', default=100, help='初始投入资金')
-@click.option('--api_key', default="", help='api_key')
-@click.option('--secret', default="", help='secret')
-@click.option('--password', default="", help='password')
-@click.option('--is_testnet', default=True, help='is_testnet True or False')
 @click.option('--debug', default=True)
 @click.option('--short_period', default=20, help="短周期")
 @click.option('--long_period', default=120, help="长周期")
-def ema_crossover(symbol, cash, interval, api_key, secret, password, is_testnet, short_period, long_period, debug=True):
+def ema_crossover(ctx, symbol, cash, interval, short_period, long_period, debug=True):
     """
     策略 [ema指数交叉]
     黄金交叉买入，死亡交叉卖出
     """
+
+    api_key = ctx.obj['API']['api_key']
+    secret = ctx.obj['API']['secret']
+    password = ctx.obj['API']['password']
+    is_testnet = ctx.obj['API']['is_testnet']
+
     data = OKXData(symbol=symbol, interval=interval, online_data=True, is_testnet=is_testnet, debug=debug)
     cerebro = bt.Cerebro()
     cerebro.adddata(data)
