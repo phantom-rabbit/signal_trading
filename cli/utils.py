@@ -50,6 +50,7 @@ def result_handler(result, strategy_name):
 
     df = pd.DataFrame(data)
     df.sort_values(by="fundvalue", ascending=False)
-    save_path = os.path.join("data", f"{strategy_name}.xlsx")
+    strategy_name = str.replace(strategy_name, " ", "_")
+    save_path = f"{strategy_name}.xlsx"
     df.to_excel(save_path, index=False)
     logger.info(f"save analyzer {save_path}")
