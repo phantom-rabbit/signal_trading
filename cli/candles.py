@@ -19,8 +19,9 @@ def candles(ctx):
 @click.option('--interval', default='1m', help='交易间隔，查看okx candles参数 1m/3m/5m/....')
 @click.option('--start', default='2023-01-01 00:00:00', help='2023-01-01 00:00:00')
 @click.option('--end', default='2023-01-02 00:00:00', help='2023-01-02 00:00:00')
+@click.option('--output', default='', help='输出文件存放位置')
 @click.pass_context
-def history(ctx, symbol, interval, start, end):
+def history(ctx, symbol, interval, start, end, output):
     workdir = ctx.obj['workdir']
     """获取历史数据"""
     start = pd.to_datetime(start)
@@ -30,9 +31,8 @@ def history(ctx, symbol, interval, start, end):
 
     file_name = f"{symbol}_{interval}_{start}_{end}.csv"
     filename = clean_filename(filename=file_name)
-    directory = os.path.join(workdir, "candles")
-    filename = os.path.join(directory, filename)
-    os.makedirs(directory, exist_ok=True)
+    filename = os.path.join(output, filename)
+    os.makedirs(output, exist_ok=True)
     okx_data.save_(filename)
     logger.info(f"save to {filename}")
 

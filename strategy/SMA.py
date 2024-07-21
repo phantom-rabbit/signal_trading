@@ -34,7 +34,7 @@ class SMA(bt.Strategy):
             logger.debug(f"position:{position} cash:{cash} avg_price:{self.sma[0]} close:{self.datas[0].close[0]}")
 
         buy_price = self.sma[0] * (1 - self.params.below)
-        sell_price = self.sma[0]* (1 + self.params.above)
+        sell_price = self.sma[0] * (1 + self.params.above)
         if self.datas[0].close[0] < buy_price:
             if self.op == bt.Order.Buy:
                 size = cash / self.datas[0].close[0]
