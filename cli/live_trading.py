@@ -64,16 +64,19 @@ def sma(ctx, symbol, cash, interval, period, below, above, debug=True):
     cerebro.setbroker(broker)
 
     cerebro.addstrategy(SMA, period=period, below=below, above=above, debug=debug)
+
     # 注册信号处理函数
     def signal_handler(signal, frame):
         logger.info("Signal received, stopping...")
         data.stop()
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
     # 运行策略
     cerebro.run()
     # result_handler(run, f"{datetime.datetime.now()}_SMA")
+
 
 @live_trading.command()
 @click.option('--symbol', default='BTC/USDT', help='交易对')
@@ -119,16 +122,19 @@ def ema(ctx, symbol, cash, interval, period, below, above, debug=True):
     cerebro.setbroker(broker)
 
     cerebro.addstrategy(EMA, period=period, below=below, above=above, debug=debug)
+
     # 注册信号处理函数
     def signal_handler(signal, frame):
         logger.info("Signal received, stopping...")
         data.stop()
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
     # 运行策略
     cerebro.run()
     # result_handler(run, f"{datetime.datetime.now()}_SMA")
+
 
 @live_trading.command()
 @click.pass_context
@@ -172,10 +178,12 @@ def ema_crossover(ctx, symbol, cash, interval, short_period, long_period, debug=
     cerebro.setbroker(broker)
 
     cerebro.addstrategy(EMA_Crossover, short_period=short_period, long_period=long_period, debug=debug)
+
     # 注册信号处理函数
     def signal_handler(signal, frame):
         logger.info("Signal received, stopping...")
         data.stop()
+
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
