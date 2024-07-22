@@ -1,11 +1,12 @@
 import os.path
+import sys
 
 from loguru import logger
 import pandas as pd
 
 
 
-def result_handler(results, strategy_name):
+def result_handler(results, strategy_name, opt):
     # 准备存储结果的列表
     results_list = []
 
@@ -17,18 +18,16 @@ def result_handler(results, strategy_name):
 
             # 获取最终投资组合值
             final_value = strategy.broker.getvalue()
-            # 打印结果
-            print(f"Strategy parameters: {params} value: {final_value}")
             # 存储结果
             results_list.append({
                 **params,
                 'final_value': final_value,
             })
-    # 创建 pandas 数据框
+    for row in results_list:
+        print(f"{row}")
     results_df = pd.DataFrame(results_list)
-
-    # 导出结果到 CSV 文件
-    strategy_name = str.replace(strategy_name, " ", "_")
-    save_path = f"{strategy_name}.xlsx"
-    results_df.to_csv(save_path, index=False)
-    logger.info(f"save analyzer {save_path}")
+    if opt:
+        strategy_name = str.replace(strategy_name, " ", "_")
+        save_path = f"{strategy_name}.xlsx"
+        results_df.to_excel(save_path, index=False)
+        logger.info(f"save to {save_path}")

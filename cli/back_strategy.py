@@ -5,7 +5,7 @@ from loguru import logger
 import pandas as pd
 import backtrader as bt
 from analyzer import PositionReturn
-from strategy import EMA_Crossover, EMA, SMA
+from strategy import EMA_Crossover, EMA, SMA, Busy
 from .utils import result_handler
 from pathlib import Path
 
@@ -57,7 +57,7 @@ def create_cerebro(filepath, cash, maxcpus):
 @click.option('--f', '--file', 'filepath', required=True, help="数据文件 csv")
 @click.option('-o', '--output', 'output_dir', help="输出目录")
 @click.option('--maxcpus', default=os.cpu_count())
-@click.option('--opt', default=False, help="参数寻优, 结果输出表格")
+@click.option('--opt', default=False, is_flag=True, help="参数寻优, 结果输出表格")
 def back_strategy(ctx, cash, debug, filepath, output_dir, maxcpus, opt):
     """策略回测"""
 
@@ -71,7 +71,7 @@ def back_strategy(ctx, cash, debug, filepath, output_dir, maxcpus, opt):
     if output_dir:
         os.makedirs(output_dir, exist_ok=True)
     logger.info(
-        f"params cash:{cash} filepath:{filepath} output_dir:{output_dir} cpus:{cpus} debug:{debug}")
+        f"params cash:{cash} filepath:{filepath} output_dir:{output_dir} cpus:{maxcpus} opt:{opt} debug:{debug}")
 
 
 @back_strategy.command()
@@ -239,7 +239,7 @@ def sma_busy(ctx, short_period, long_period, below, net_profit, stop_loss):
 
     cerebro = create_cerebro(filepath, cash, maxcpus)
     cerebro.optstrategy(
-        EMA_Crossover,
+        Busy,
         short_period=short_period,
         long_period=long_period,
         below=below,
@@ -247,10 +247,10 @@ def sma_busy(ctx, short_period, long_period, below, net_profit, stop_loss):
         stop_loss=stop_loss,
         debug=debug)
     # 运行策略
-    result = cerebro.run()
-    if opt:
-        data_source = Path(filepath).stem
-        filename = f"{data_source}_sma_busy"
-        if output_dir:
-            filename = os.path.join(output_dir, filename)
-            result_handler(result, filename)
+    results = cerebro.run()
+    data_source = Path(filepath).stem
+    filename = f"{data_source}_sma_busy"
+    if output_dir:
+        filename = os.path.join(output_dir, filename)
+    result_handler(results, filename, opt)
+
