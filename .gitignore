@@ -1,11 +1,16 @@
 data/*
+data
 tests/
+dist
+build
 
 # 忽略 __pycache__ 目录
 __pycache__/
 
 # 忽略所有 .pyc 文件
-*.pyc
+*/.pyc
 
 config.toml
 .DS_Store
+
+venv

@@ -1,18 +1,15 @@
 from cli import cli
-from loguru import logger
 import time
 import pyfiglet
-from colorama import Fore, Style, init
+from colorama import Fore, init
 
 # 初始化 colorama
 init(autoreset=True)
 
 def print_startup_message():
-    # 使用 pyfiglet 创建 ASCII 艺术
     title = pyfiglet.figlet_format("Signal Trading", font="slant")
     author = pyfiglet.figlet_format("Author: Phantom", font="digital")
 
-    # 打印带颜色的启动消息
     print(Fore.CYAN + title)
     time.sleep(0.1)
     print(Fore.YELLOW + author)

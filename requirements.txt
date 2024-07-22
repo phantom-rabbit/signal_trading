@@ -31,3 +31,4 @@ yarl==1.9.4
 toml==0.10.2
 pyfiglet==1.0.2
 colorama==0.4.6
+pyinstaller==6.9.0

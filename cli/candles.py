@@ -22,7 +22,6 @@ def candles(ctx):
 @click.option('--output', default='', help='输出文件存放位置')
 @click.pass_context
 def history(ctx, symbol, interval, start, end, output):
-    workdir = ctx.obj['workdir']
     """获取历史数据"""
     start = pd.to_datetime(start)
     end = pd.to_datetime(end)
@@ -31,8 +30,9 @@ def history(ctx, symbol, interval, start, end, output):
 
     file_name = f"{symbol}_{interval}_{start}_{end}.csv"
     filename = clean_filename(filename=file_name)
-    filename = os.path.join(output, filename)
-    os.makedirs(output, exist_ok=True)
+    if output:
+        os.makedirs(output, exist_ok=True)
+        filename = os.path.join(output, filename)
     okx_data.save_(filename)
     logger.info(f"save to {filename}")
 
