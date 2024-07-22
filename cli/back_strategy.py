@@ -6,33 +6,8 @@ import pandas as pd
 import backtrader as bt
 from analyzer import PositionReturn
 from strategy import EMA_Crossover, EMA, SMA, Busy
-from .utils import result_handler
+from .utils import result_handler, COMMA_SEPARATED_LIST, COMMA_SEPARATED_LIST_INT
 from pathlib import Path
-
-
-class CommaSeparatedList(click.ParamType):
-    name = "comma_separated_list"
-
-    def convert(self, value, param, ctx):
-        try:
-            return [float(x) for x in value.split(",")]
-        except ValueError:
-            self.fail(f"{value} is not a valid comma-separated list", param, ctx)
-
-class CommaSeparatedListInt(click.ParamType):
-    name = "comma_separated_list"
-
-    def convert(self, value, param, ctx):
-        try:
-            return [int(x) for x in value.split(",")]
-        except ValueError:
-            self.fail(f"{value} is not a valid comma-separated list", param, ctx)
-
-
-
-COMMA_SEPARATED_LIST = CommaSeparatedList()
-COMMA_SEPARATED_LIST_INT = CommaSeparatedListInt()
-
 
 def create_cerebro(filepath, cash, maxcpus):
     try:
@@ -245,7 +220,8 @@ def sma_busy(ctx, short_period, long_period, below, net_profit, stop_loss):
         below=below,
         net_profit=net_profit,
         stop_loss=stop_loss,
-        debug=debug)
+        debug=debug
+    )
     # 运行策略
     results = cerebro.run()
     data_source = Path(filepath).stem

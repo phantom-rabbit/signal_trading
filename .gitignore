@@ -10,3 +10,5 @@ config.toml
 .DS_Store
 
 venv
+*.log
+*.xlsx

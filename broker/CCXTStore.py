@@ -1,3 +1,4 @@
+import sys
 from decimal import Decimal, ROUND_DOWN
 
 import ccxt
@@ -27,13 +28,36 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
         ('api_key', ''),
         ('secret', ''),
         ('password', ''),
-        ('is_testnet', True),
-        ('cash', 0),
-        ('debug', False),
+        ('exchange_id', ''),
+        ('sandbox', True),
     )
 
     BrokerCls = None  # broker class will auto register
     DataCls = None  # data class will auto register
+
+    def __init__(self):
+        exchange_class = getattr(ccxt, self.p.exchange_id)
+
+        exchange = exchange_class({
+            'apiKey': self.p.api_key,
+            'secret': self.p.secret,
+            'password': self.p.password,
+            'enableRateLimit': True,
+        })
+
+        if self.params.sandbox:
+            exchange.set_sandbox_mode(True)
+
+        self.exchange = exchange
+        self.markets = self.exchange.load_markets()
+
+
+    def get_balance(self, coin='USDT'):
+        balance = self.exchange.fetch_balance(params={
+            "ccy": coin
+        })
+        cash_free = balance['free'][coin]
+        return cash_free
 
     @classmethod
     def getdata(cls, *args, **kwargs):
@@ -45,39 +69,15 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
         '''Returns broker with *args, **kwargs from registered ``BrokerCls``'''
         return cls.BrokerCls(*args, **kwargs)
 
-    def __init__(self):
-        self.exchange = ccxt.okx({
-            'apiKey': self.p.api_key,
-            'secret': self.p.secret,
-            'password': self.p.password,
-            'enableRateLimit': True,
-        })
-        if self.p.is_testnet:
-            self.exchange.set_sandbox_mode(True)
-
-        self._cash = self.p.cash
-        balance = self.exchange.fetch_balance(params={
-            "ccy": "USDT"
-        })
-        cash_free = balance['free']['USDT']
-        logger.info(f"usdt free:{balance['free']['USDT']}")
-        if self._cash > cash_free:
-            raise ValueError("可用资金小于初始资金")
-
-        self.markets = self.exchange.load_markets()
-
-
     @retry(wait=wait_fixed(2), stop=stop_after_attempt(30))
     def execute_order(self, symbol, side, size, price=None, order_type='limit'):
         try:
             size = self.handler_precision(symbol, size)
             price = self.adjust_price(symbol, side, price)
-            if self.p.debug:
-                logger.debug(
+            logger.debug(
                     f"Executing order: symbol: {symbol}, type: {order_type}, side: {side}, size: {size}, price: {price}")
             order = self.exchange.create_order(symbol, order_type, side, size, price)
-            if self.p.debug:
-                logger.debug(f"Order result: {order}")
+            logger.debug(f"Order result: {order}")
             return order
         except Exception as e:
             logger.error(e)
@@ -87,7 +87,8 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
         highest_price_limit = self.get_highest_price_limit(symbol, side)
         if side == "buy":
             if price > highest_price_limit:
-                logger.warning(f"Side {side} price {price} exceeds highest price limit {highest_price_limit}. Adjusting to limit.")
+                logger.warning(
+                    f"Side {side} price {price} exceeds highest price limit {highest_price_limit}. Adjusting to limit.")
                 price = highest_price_limit
         else:
             if price < highest_price_limit:
@@ -106,11 +107,9 @@ class CCXTStore(with_metaclass(MetaSingleton, object)):
 
     @retry(wait=wait_fixed(2))
     def fetch_order(self, oid, symbol):
-        if self.p.debug:
-            logger.debug(f"Fetch_order: {oid}")
+        logger.debug(f"Fetch_order: {oid}")
         order_info = self.exchange.fetch_order(oid, symbol)
-        if self.p.debug:
-            logger.debug(f"Fetch_order result: {order_info}")
+        logger.debug(f"Fetch_order result: {order_info}")
         return order_info
 
     def handler_precision(self, symbol, value):
@@ -134,8 +133,3 @@ def truncate_to_decimal_places(number, decimal_places):
 
     # 去除多余的零
     return truncated_number.normalize()
-
-
-if __name__ == '__main__':
-    ccxt_store = CCXTStore(api_key='b2151fec-0aaa-4571-a3b9-8ab4ce276e3a', secret='7D5D310BFB49EEA5E017EBB9F258F027',
-                           password='Lol@123456', cash=100, is_testnet=True, debug=True, )

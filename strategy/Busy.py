@@ -18,22 +18,26 @@ class Busy(bt.Strategy):
         ('below', 0.02),  # 买入百分比
         ('net_profit', 0.05),  # 止盈百分比
         ('stop_loss', 0.03),  # 止损百分比
-        ('debug', True),
     )
 
     def __init__(self):
-        self.short_ma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.short_period)
-        self.long_ma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.long_period)
+        self.dataclose = self.datas[0].close
+        # self.short_ma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.short_period)
+        # self.long_ma = bt.indicators.SimpleMovingAverage(self.data.close, period=self.params.long_period)
+
+        self.short_ma = bt.indicators.EMA(self.data.close, period=self.params.short_period)
+        self.long_ma = bt.indicators.EMA(self.data.close, period=self.params.long_period)
+
         self.buy_price = None
         self._open_order = None
         self.op = bt.Order.Buy
+        self.commission = 0
         logger.info(f"Init Busy strategy params: {self.params.__dict__}")
 
     def next(self):
         # 获取最近N个Bar的数据
         if len(self.datas[0]) < self.params.long_period:
-            if self.p.debug:
-                logger.debug(f"time:{self.datas[0].datetime.datetime(0)} close price:{self.datas[0].close[0]}")
+            logger.debug(f"time:{self.datas[0].datetime.datetime(0)} close price:{self.datas[0].close[0]}")
             return
         if self._open_order and self.op == bt.Order.Sell:
             # TODO 达到风险控制，没有完成的买单要及时撤单
@@ -55,7 +59,8 @@ class Busy(bt.Strategy):
             return
         # 风险控制，不开新仓
         if self.data.close[0] < self.long_ma[0]:
-            logger.warning(f"触发风险控制,暂停开单 {self.datas[0].datetime.datetime(0)} 当前价低于长均线:{self.data.close[0]}<{self.long_ma[0]}")
+            logger.warning(
+                f"触发风险控制,暂停开单 {self.datas[0].datetime.datetime(0)} 当前价低于长均线:{self.data.close[0]}<{self.long_ma[0]}")
             return
 
         # 获取当前头寸
@@ -65,19 +70,17 @@ class Busy(bt.Strategy):
         if self.op == bt.Order.Buy:  # 当前无任何订单
             # 检查开仓条件
             if self.data.close[0] <= self.short_ma[0] * (1 - self.params.below):
-                if self.p.debug:
-                    logger.debug(f"触发开仓条件:({self.data.close[0]} <= {self.short_ma[0] * (1 - self.params.below)}) "
-                                 f"position:{position} "
-                                 f"cash:{cash} "
-                                 f"short_ma:{self.short_ma[0]} "
-                                 f"time: {self.datas[0].datetime.datetime(0)}")
+                logger.debug(f"触发开仓条件:({self.data.close[0]} <= {self.short_ma[0] * (1 - self.params.below)}) "
+                             f"position:{position} "
+                             f"cash:{cash} "
+                             f"short_ma:{self.short_ma[0]} "
+                             f"time: {self.datas[0].datetime.datetime(0)}")
 
                 self.buy_price = self.data.close[0]
                 size = cash / self.buy_price
                 self.buy(price=self.buy_price, size=size, exectype=bt.Order.Limit)
                 self._open_order = True
-                if self.p.debug:
-                    logger.debug(f"buy order price:{self.buy_price} size:{size} exectype:{bt.Order.Limit}")
+                logger.debug(f"buy order price:{self.buy_price} size:{size} exectype:{bt.Order.Limit}")
 
         else:  # 当前已存在买单，
             # 检查止盈条件
@@ -92,10 +95,7 @@ class Busy(bt.Strategy):
                 # TODO 使用最高价卖出
                 self.sell(price=self.data.close[0], size=size, exectype=bt.Order.Limit)
                 self._open_order = True
-                if self.p.debug:
-                    logger.debug(f"sell order price:{self.datas[0].close[0]} size:{size}")
-
-
+                logger.debug(f"sell order price:{self.datas[0].close[0]} size:{size}")
 
     def notify_order(self, order):
         if order.status == bt.Order.Completed:
@@ -105,4 +105,11 @@ class Busy(bt.Strategy):
             # 获取当前头寸
             position = self.getposition(self.data).size
             cash = self.broker.getcash()
-            logger.info(f"position:{position:.8e} cach:{cash:.4e}")
+            commission = order.size * order.price * 0.001
+            if commission <0:
+                commission = commission * -1
+            self.commission += commission
+            logger.info(f"position:{position:.8f} cach:{cash:.4f} commission:{commission}")
+
+    def stop(self):
+        logger.info(f"commission:{self.commission}")

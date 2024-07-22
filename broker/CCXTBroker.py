@@ -1,9 +1,10 @@
+import sys
 import time
 
 from loguru import logger
 import backtrader as bt
 from backtrader.utils.py3 import queue, with_metaclass
-from .OKXStore import CCXTStore
+from .CCXTStore import CCXTStore
 
 
 class Positions:
@@ -30,15 +31,15 @@ class MetaCCXTBroker(bt.BrokerBase.__class__):
         CCXTStore.BrokerCls = cls
 
 
-class OKXBroker(with_metaclass(MetaCCXTBroker, bt.BackBroker)):
+class CCXTBroker(with_metaclass(MetaCCXTBroker, bt.BackBroker)):
     params = (
         ('api_key', ''),
         ('secret', ''),
         ('password', ''),
         ('symbol', 'BTC/USDT'),
-        ('is_testnet', True),
+        ('exchange_id', ''),
+        ('sandbox', True),
         ('cash', 0),
-        ('debug', False),
     )
 
     order_types = {bt.Order.Market: 'market',
@@ -47,14 +48,23 @@ class OKXBroker(with_metaclass(MetaCCXTBroker, bt.BackBroker)):
                    bt.Order.StopLimit: 'stop limit'}
 
     def __init__(self):
-        super(OKXBroker, self).__init__()
-        logger.info(f"connect to OKEX {'test-net' if self.p.is_testnet else 'main-net'}")
-        logger.info(f"set trade cash:{self.p.cash}")
+        super(CCXTBroker, self).__init__()
+        logger.info(f"connect to  {self.p.exchange_id} {'testnet' if self.p.sandbox else 'mainnet'}")
         time.sleep(1)
-        self.store = CCXTStore(api_key=self.p.api_key, secret=self.p.secret, password=self.p.password,
-                               is_testnet=self.p.is_testnet, cash=self.p.cash, debug=self.p.debug)
+        self.store = CCXTStore(
+            api_key=self.p.api_key,
+            secret=self.p.secret,
+            password=self.p.password,
+            exchange_id=self.p.exchange_id,
+            sandbox=self.p.sandbox,
+        )
 
         self.cash = self.p.cash
+        balance = self.store.get_balance()
+        if balance < self.cash:
+            logger.warning(f"可用资金不足 free:{balance} cash:{self.cash}")
+            sys.exit(1)
+        logger.info(f"free:{balance} set trade cash:{self.p.cash}")
         self.position = Positions()
 
         self.notifs = queue.Queue()

@@ -1,5 +1,6 @@
+import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import backtrader as bt
 import ccxt
@@ -14,8 +15,7 @@ class OKXData(bt.DataBase):
         ('online_data', True),
         ('symbol', 'BTC/USDT'),
         ('interval', '1m'),
-        ('is_testnet', False),
-        ('limit', 1),
+        ('network', "test-net"),
         ('debug', False),
         ('fromdate', None),  # 回测开始时间，默认为None
         ('todate', None),    # 回测结束时间，默认为None
@@ -26,8 +26,13 @@ class OKXData(bt.DataBase):
         self.exchange = ccxt.okx({
             'enableRateLimit': True,
         })
-        if self.p.is_testnet:
+        if self.p.network == "test-net":
             self.exchange.set_sandbox_mode(True)
+        elif self.p.network == "main-net":
+            pass
+        else:
+            logger.error(f"交易网络不匹配,检查配置文件 {self.p.network}")
+            sys.exit(1)
 
         self.interval = self.p.interval
 
@@ -45,10 +50,10 @@ class OKXData(bt.DataBase):
     def start(self):
         pass
 
-    def fetch_data(self):
+    def fetch_data(self, limit=1):
         current = int(time.time() * 1000)
         try:
-            ohlcvs = self.exchange.fetch_ohlcv(self.p.symbol, self.interval, limit=self.p.limit, params={
+            ohlcvs = self.exchange.fetch_ohlcv(self.p.symbol, self.interval, limit=limit, params={
                 "after": current,
             })
             if ohlcvs:
@@ -64,30 +69,51 @@ class OKXData(bt.DataBase):
         except Exception as e:
             logger.error(f"Error fetching data: {e}")
 
-    def fetch_historical_data(self):
+    def fetch_limit_data(self, limit):
+            now_time = datetime.now()
+            to_timestamp = now_time.timestamp() * 1000
+            from_timestamp = 0
+            if self.p.interval == "1m":
+                minutes = timedelta(minutes=limit)
+                from_timestamp = (now_time - minutes).timestamp() * 1000
+            elif self.p.interval == "5m":
+                minutes = timedelta(minutes=limit*5)
+                from_timestamp = (now_time - minutes).timestamp() * 1000
+
+            if from_timestamp != 0:
+                self._fetch_historical_data(int(from_timestamp), int(to_timestamp), limit=100)
+
+
+    def fetch_history(self, fromdate, todate):
+        if fromdate and todate:
+            limit = 100
+            from_timestamp = int(fromdate.timestamp() * 1000)
+            to_timestamp = int(todate.timestamp() * 1000)
+            self._fetch_historical_data(from_timestamp, to_timestamp, limit)
+        else:
+            logger.error("时间区间不能为空")
+            sys.exit(1)
+
+    def _fetch_historical_data(self, from_timestamp, to_timestamp, limit):
         with self.data_lock:
             try:
-                if self.p.fromdate and self.p.todate:
-                    from_timestamp = int(self.p.fromdate.timestamp() * 1000)
-                    to_timestamp = int(self.p.todate.timestamp() * 1000)
-                    current_timestamp = from_timestamp
+                current_timestamp = from_timestamp
 
-                    while current_timestamp < to_timestamp:
-                        ohlcvs = self.exchange.fetch_ohlcv(self.p.symbol, self.interval, since=current_timestamp, limit=self.p.limit)
-                        if ohlcvs:
-                            for ohlcv in ohlcvs:
-                                if ohlcv[0] > self.last_ts:  # 去重
-                                    self.ohlcv.append(ohlcv)
-                                    self.last_ts = ohlcv[0]
+                while current_timestamp < to_timestamp:
+                    ohlcvs = self.exchange.fetch_ohlcv(self.p.symbol, self.interval, since=current_timestamp, limit=limit)
+                    if ohlcvs:
+                        for ohlcv in ohlcvs:
+                            if ohlcv[0] > self.last_ts:  # 去重
+                                self.ohlcv.append(ohlcv)
+                                self.last_ts = ohlcv[0]
 
-                            logger.info(f"Fetched historical data point: {datetime.fromtimestamp(ohlcv[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')} limit {len(ohlcvs)}")
-                            current_timestamp = ohlcvs[-1][0] + 1  # 更新当前时间戳为最后一个数据点的时间戳+1
-                        else:
-                            break  # 如果没有更多数据，退出循环
+                        logger.info(f"Fetched historical data point: {datetime.fromtimestamp(ohlcv[0] / 1000).strftime('%Y-%m-%d %H:%M:%S')} limit {len(ohlcvs)}")
+                        current_timestamp = ohlcvs[-1][0] + 1  # 更新当前时间戳为最后一个数据点的时间戳+1
+                    else:
+                        break  # 如果没有更多数据，退出循环
 
-                    self.has_livedata = True  # 标记为有历史数据加载
-                    logger.info(f"Finished fetching historical data from {self.p.fromdate} to {self.p.todate}")
-
+                # self.has_livedata = True  # 标记为有历史数据加载
+                logger.info(f"Finished fetching historical data from")
             except Exception as e:
                 logger.error(f"Error fetching historical data: {e}")
 
@@ -96,11 +122,12 @@ class OKXData(bt.DataBase):
             logger.info("stopping data...")
             return False
 
-        while True:
+        while not self.stop_signal:
             if self.haslivedata():
                 with self.data_lock:
-                    self.has_livedata = False
                     candle = self.ohlcv.pop(0)
+                    if len(self.ohlcv) == 0:
+                        self.has_livedata = False
                     self.lines.datetime[0] = bt.date2num(convert_timestamp_to_china_time(candle[0]/1000))
                     self.lines.open[0] = candle[1]
                     self.lines.high[0] = candle[2]
