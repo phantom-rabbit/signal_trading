@@ -151,7 +151,7 @@ def oscillation(ctx, boll_period, boll_dev, rsi_period, rsi_buy_signal, stop_los
                 )
 
     period = max(boll_period, rsi_period)
-    cerebro = init_broker(ctx.obj, limit=period)
+    cerebro = init_broker(ctx.obj, limit=period+4)
     cerebro.broker.setcash(cash)
     cerebro.addstrategy(
         Oscillation,
