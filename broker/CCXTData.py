@@ -32,10 +32,13 @@ class CCXTData(bt.DataBase):
         super(CCXTData, self).start()
 
     def stop(self):
-        super(CCXTData, self).stop()
+        pass
 
     def haslivedata(self):
-        return True
+        if len(self.ohlcv) != 0:
+            return True
+        else:
+            return False
 
     def islive(self):
         return True
@@ -65,6 +68,7 @@ class CCXTData(bt.DataBase):
 
                 return True
             else:
+                print(111)
                 return False
         except Exception as e:
             logger.error(f"Error loading data: {e}")

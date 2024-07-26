@@ -52,8 +52,8 @@ def back_strategy(ctx, cash, debug, filepath, output_dir, maxcpus, opt):
 @click.option("--stop_loss", type=COMMA_SEPARATED_LIST, required=True, help="风险控制百分比")
 def sma_busy(ctx, short_period, long_period, below, net_profit, stop_loss):
     """
-    策略 [ema指数交叉]
-    黄金交叉买入，死亡交叉卖出
+        均线
+        上升通道
     """
     cash = ctx.obj['cash']
     filepath = ctx.obj['filepath']

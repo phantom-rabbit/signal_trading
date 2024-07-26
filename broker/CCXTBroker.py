@@ -26,7 +26,6 @@ class CCXTOrder(bt.OrderBase):
 class MetaCCXTBroker(bt.BrokerBase.__class__):
     def __init__(cls, name, bases, dct):
         '''Class has already been created ... register'''
-        # Initialize the class
         super(MetaCCXTBroker, cls).__init__(name, bases, dct)
         CCXTStore.BrokerCls = cls
 
@@ -49,7 +48,7 @@ class CCXTBroker(with_metaclass(MetaCCXTBroker, bt.BackBroker)):
 
     def __init__(self):
         super(CCXTBroker, self).__init__()
-        logger.info(f"connect to  {self.p.exchange_id} {'testnet' if self.p.sandbox else 'mainnet'}")
+        logger.info(f"准备连接[{str.upper(self.p.exchange_id)}]{'模拟盘交易' if self.p.sandbox else '实盘交易'}")
         time.sleep(1)
         self.store = CCXTStore(
             api_key=self.p.api_key,
@@ -62,9 +61,9 @@ class CCXTBroker(with_metaclass(MetaCCXTBroker, bt.BackBroker)):
         self.cash = self.p.cash
         balance = self.store.get_balance()
         if balance < self.cash:
-            logger.warning(f"可用资金不足 free:{balance} cash:{self.cash}")
+            logger.warning(f"可用资金不足 空闲资金:{balance} 操作资金:{self.cash}")
             sys.exit(1)
-        logger.info(f"free:{balance} set trade cash:{self.p.cash}")
+        logger.info(f"空闲资金:{balance} 设置可操作资金:{self.p.cash}")
         self.position = Positions()
 
         self.notifs = queue.Queue()
