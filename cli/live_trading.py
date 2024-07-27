@@ -129,7 +129,7 @@ def sma_busy(ctx, short_period, long_period, below, net_profit, stop_loss):
 @live_trading.command()
 @click.pass_context
 @click.option('--boll_period', type=int, default=60, required=True, help="布林带的周期长度")
-@click.option('--boll_dev', type=float, default=3.0, required=True, help="布林带的标准差倍数")
+@click.option('--boll_dev', type=float, default=5.0, required=True, help="布林带的标准差倍数")
 @click.option('--rsi_period', type=int, default=80, required=True, help="RSI周期")
 @click.option('--rsi_buy_signal', type=float, default=41.5, required=True, help="买入信号")
 @click.option('--stop_loss', type=float, default=0.1, required=True, help="止损百分比")
