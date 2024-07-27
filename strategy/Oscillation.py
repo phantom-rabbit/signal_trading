@@ -137,8 +137,9 @@ class Oscillation(bt.Strategy):
         current_close = self.data.close[0]
         current_time = self.datas[0].datetime.datetime(0)
         recent_rsi_list = np.array([self.rsi[-i] for i in range(1, 5)])
-        close_values = np.array([self.data.close[-i] for i in range(1, 5)])
-        close_trend = np.all(np.diff(close_values) < 0)
+
+        close_values = np.array([self.data.close[-i] for i in range(3)])
+        close_trend = np.all(np.diff(close_values) >= 0)
 
         # 计算差分数组，并判断是否所有差值都大于0（即上升趋势）
         is_rsi_downward = np.all(np.diff(recent_rsi_list) < 0)
@@ -146,26 +147,35 @@ class Oscillation(bt.Strategy):
         volume = np.array([self.data.volume[-i] for i in range(1, 6)])
 
         logger.debug(f"RSI:{recent_rsi_list} 是否连续下降趋势:{is_rsi_downward}")
-        logger.debug(f"收盘价:{close_values} 是否连续下降趋势:{close_trend}")
+        logger.debug(f"收盘价:{close_values} 连续上升:{close_trend}")
 
         if self._op == bt.Order.Buy:
             if self.rsi[0] < self.p.rsi_buy_signal:
-                if is_rsi_downward and close_trend:
+                if is_rsi_downward:
+                    # 博反转
                     if current_close > self.data.close[-1]:
-                        # rsi 触底反弹
-                        if self.rsi[0] > recent_rsi_list[0]:
-                            cash = self.broker.getcash() - 0.1  # 避免计算精度问题导致溢价
-                            size = cash / current_close
-                            order = self._sumit_buy_order(current_close, size, bt.Order.Limit)
-                            if order:
-                                self.buy_signal = False
-                                logger.info(
-                                    f"买入订单.{current_time} 价格:{current_close} 数量:{size:.8f} cash:{cash} 成交量:{volume}")
-                                return
+                        cash = self.broker.getcash() - 0.1  # 避免计算精度问题导致溢价
+                        size = cash / current_close
+                        order = self._sumit_buy_order(current_close, size, bt.Order.Limit)
+                        if order:
+                            self.buy_signal = False
+                            logger.info(
+                                f"买入订单.{current_time} 价格:{current_close} 数量:{size:.8f} cash:{cash} 成交量:{volume}")
+                            return
+
+            if self.rsi[0] < 10:
+                cash = self.broker.getcash() - 0.1  # 避免计算精度问题导致溢价
+                size = cash / current_close
+                order = self._sumit_buy_order(current_close, size, bt.Order.Limit)
+                if order:
+                    self.buy_signal = False
+                    logger.info(
+                        f"买入订单.{current_time} 价格:{current_close} 数量:{size:.8f} cash:{cash} 成交量:{volume}")
+                    return
 
         if self._op == bt.Order.Sell:
-            if current_close >= self.boll.lines.mid[0]:
-                if current_close > self.data.close[-1]:
+            if current_close >= self.boll.lines.mid[0] and self.rsi[0] > 50:
+                if current_close < self.boll.lines.top[0] and not is_rsi_downward and self.rsi[0] < 80:
                     return
                 size = self.getposition(self.data).size
                 order = self._sumit_sell_order(current_close, size, bt.Order.Limit)
@@ -189,3 +199,31 @@ class Oscillation(bt.Strategy):
                     self._open_order = True
                     logger.info(
                         f"止损. {current_time} 买单价格:{self._buy_price} 当前价格:{current_price} 数量:{size:.8f} 浮盈:{((current_price * size) - (self._buy_price * size)):.4f}")
+
+
+import pandas as pd
+
+if __name__ == '__main__':
+    # 创建Cerebro引擎
+    cerebro = bt.Cerebro()
+    path = "../../data/FILUSDT_1m_2024-06-29_2024-07-28_okx_testnet.csv"
+    df = pd.read_csv(path, index_col='datetime', parse_dates=True)
+    # df = pd.read_csv(path)
+    logger.add('test.log', level='DEBUG')
+    data = bt.feeds.PandasData(dataname=df)
+    # 添加数据到引擎
+    cerebro.adddata(data)
+    cerebro.broker.set_cash(1000)
+    cerebro.addstrategy(
+        Oscillation,
+        boll_period=60,
+        boll_dev=3.0,
+        rsi_period=80,
+        rsi_buy_signal=40,
+        stop_loss=0.2
+    )
+    # 运行回测
+    cerebro.run()
+
+    # 绘图
+    # cerebro.plot()

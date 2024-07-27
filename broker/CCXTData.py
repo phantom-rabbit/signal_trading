@@ -147,9 +147,11 @@ class CCXTData(bt.DataBase):
             logger.error("时间区间不能为空")
             sys.exit(1)
 
-        columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+        columns = ['datetime', 'open', 'high', 'low', 'close', 'volume']
         df = pd.DataFrame(self.ohlcv, columns=columns)
-        df['timestamp'] = pd.to_datetime(df['timestamp'])
+        # df['datetime'] = pd.to_datetime(df['datetime'])
+        df['openinterest'] = 0 # 新增一列，并且数据都为0
+        df = df[columns + ['openinterest']]
         path = f"{path}_{self.p.exchange_id}_{'testnet' if self.p.sandbox else 'mainnet'}.csv"
         df.to_csv(path, index=False)
         logger.info(f"save to {path}")

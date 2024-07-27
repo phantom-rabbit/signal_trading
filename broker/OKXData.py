@@ -149,11 +149,13 @@ class OKXData(bt.DataBase):
 
     def save_(self, path):
         # 定义字段名称
-        columns = ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+        columns = ['datetime', 'open', 'high', 'low', 'close', 'volume']
         # 创建 DataFrame 并指定列名
         df = pd.DataFrame(self.ohlcv, columns=columns)
         # 保存为 CSV 文件并包含列名
-        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df['datetime'] = pd.to_datetime(df['datetime'], unit='ms')
+        df['openinterest'] = 0 # 新增一列，并且数据都为0
+        df = df[columns + ['openinterest']]
         df.to_csv(path, index=False)
 
     def stop(self):
